@@ -1,0 +1,43 @@
+
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+!Makefile
+# Unignore all dirs
+!*/
+!extensions
+src/Interactor/Experimental
+*.o
+*.so
+*log
+*.test
+a.out
+*~
+*.particles
+*.pbc
+*.gdr
+*.bak
+gdrDATA
+bin/*
+kk*
+src/uammd
+src/aradillo.*
+star*
+armadillo*
+*.nvvp
+.\#*
+\#*
+work
+examples/data.main*
+*.dat
+
+docs/_static
+docs/_build
+docs/uammd
+
+_minted*
+ltxim*
+README.pdf
+README.tex
