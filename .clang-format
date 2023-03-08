@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+NamespaceIndentation: All
+PointerAlignment: Left
+ColumnLimit: 80
+BreakBeforeBraces: Custom	
+BraceWrapping:
+    BeforeCatch: true
+SortIncludes: false
+SortUsingDeclarations: false
+IndentPPDirectives: 'BeforeHash'
+
+
