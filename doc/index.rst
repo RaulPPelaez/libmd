@@ -23,7 +23,7 @@ libMD is a library for common operations in machine learning methods applied to 
 
 .. important::
 
-   **Compiling and running any code containing libMD requires a working SYCL compiler**. We recommend using [OpenSYCL](https://github.com/OpenSYCL/OpenSYCL)
+   **Compiling and running any code containing libMD requires a working SYCL compiler**. We recommend using `OpenSYCL <https://github.com/OpenSYCL/OpenSYCL>`
 
 If this is the first time you encounter libMD and want a quick start guide check the :doc:`QuickStart`. The :doc:`FAQ` is also a good source of knowledge.
 
