@@ -27,4 +27,4 @@
 
 Common tools for Molecular Dynamics written in SYCL
 
-Check the documentation at [[libmd.readthedocs.io]]
+Check the documentation at [[https://libmd.readthedocs.io]]
