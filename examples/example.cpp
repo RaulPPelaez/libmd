@@ -7,7 +7,7 @@ using namespace cl;
 
 int main() {
 
-  sycl::queue q = md::get_default_qeue();
+  sycl::queue q = md::get_default_queue();
   // Print some properties of the sycl queue
   md::log("Device: " + q.get_device().get_info<sycl::info::device::name>());
   md::log("Vendor: " + q.get_device().get_info<sycl::info::device::vendor>());
