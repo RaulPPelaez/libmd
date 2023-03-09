@@ -27,7 +27,7 @@ libMD is a library for common operations in machine learning methods applied to 
 
 If this is the first time you encounter libMD and want a quick start guide check the :doc:`QuickStart`. The :doc:`FAQ` is also a good source of knowledge.
 
-Look in :doc:`Compiling-libMD` if some Makefile gives you troubles. libMD is a header only framework and it is mostly self contained in terms of dependencies.
+Look in :doc:`Compiling` if some Makefile gives you troubles. libMD is a header only framework and it is mostly self contained in terms of dependencies.
 
 
 
@@ -38,7 +38,7 @@ A brief example of how a code using libMD typically looks like.
 
 .. code:: cpp
 
-  auto q = md::get_default_qeue();
+  auto q = md::get_default_queue();
   int num_particles = 100;
   float box_size = 128.f;
   float cutoff = 1.5f;
@@ -72,7 +72,7 @@ A brief example of how a code using libMD typically looks like.
    :caption: First steps
 
    QuickStart
-   Compiling-libMD
+   Compiling
    FAQ
    Examples
    Tests

@@ -4,8 +4,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/../cmake)
 set (CMAKE_CXX_STANDARD 20)
 find_package(hipSYCL CONFIG REQUIRED)
 
+set(MD_LOG_LEVEL 15 CACHE STRING "Log level")
+add_compile_definitions(MD_LOG_LEVEL=${MD_LOG_LEVEL})
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE DEBUG)
+endif()
+
+# Add optimization flags in Release mode
+if(CMAKE_BUILD_TYPE MATCHES Release)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif()
 
 if(WIN32)
@@ -13,4 +21,5 @@ if(WIN32)
 endif()
 
 include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR} include)
-subdirs(examples tests)
+enable_testing()
+subdirs(examples tests benchmark)

@@ -8,8 +8,27 @@
 using namespace cl;
 using namespace md;
 
+void assert_eq_vec3(vec3<float> a, vec3<float> b){
+  for(int i = 0; i < 3; i++){
+    ASSERT_EQ(a[i], b[i]);
+  }
+}
+
+void assert_near_vec3(vec3<float> a, vec3<float> b, float tol = 1e-6){
+  for(int i = 0; i < 3; i++){
+    ASSERT_THAT(a[i], ::testing::FloatNear(b[i], tol));
+  }
+}
+
+//Gives a different vec every time
+auto get_random_vec3(vec3<float> min, vec3<float> max){
+  static std::mt19937 gen(0xBADA55D00D);
+  static std::uniform_real_distribution<float> dis(0, 1);
+  return vec3<float>(dis(gen), dis(gen), dis(gen))*(max - min) + min;
+}
+
 TEST(Queue, IsCreatedCorrectly){
-  auto q = md::get_default_qeue();
+  auto q = md::get_default_queue();
   //List properties of the queue with the log function
   log("Queue has device called %s", q.get_device().get_info<sycl::info::device::name>().c_str());
   log("Queue has %d compute units", q.get_device().get_info<sycl::info::device::max_compute_units>());
@@ -26,7 +45,7 @@ TEST(Queue, BufferCanBeCreated){
 }
 
 TEST(NeighborList, IsCorrectForTwoParticlesOpenBox){
-  auto q = md::get_default_qeue();
+  auto q = md::get_default_queue();
   auto positions = sycl::buffer<vec3<float>>(2);
   {
     sycl::host_accessor positions_acc{positions, sycl::write_only, sycl::no_init};
@@ -46,7 +65,7 @@ TEST(NeighborList, IsCorrectForTwoParticlesOpenBox){
 
 template <std::floating_point T>
 void nbody_test(int num_particles, vec3<T> box_size, bool periodic, T cutoff){
-  auto q = md::get_default_qeue();
+  auto q = md::get_default_queue();
   auto positions = sycl::buffer<vec3<T>>(num_particles);
   {
     sycl::host_accessor positions_acc{positions, sycl::write_only, sycl::no_init};
@@ -84,8 +103,40 @@ TEST(NeighborList, IsCorrectForNParticlesNBody){
   nbody_test<float>(num_particles, vec3<float>(box_size), false, sqrt(3)*box_size);
 }
 
+template <std::floating_point T>
+auto apply_periodic_boundary_conditions_naive(vec3<T> pos, Box<T> box){
+  vec3<T> result;
+  for(int i = 0; i < 3; i++){
+    result[i] = pos[i];
+    while(result[i] <= -box.size[i][i]*0.5) result[i] += box.size[i][i];
+    while(result[i] >= box.size[i][i]*0.5) result[i] -= box.size[i][i];
+  }
+  return result;
+}
+
+TEST(Box, PeriodicBoundaryConditionsOrthorhombic){
+  vec3<float> lbox(10, 20, 30);
+  auto box = Box(lbox);
+  auto result = apply_periodic_boundary_conditions({1.5f, 0.f, 0.f}, box);
+  assert_near_vec3(result, vec3<float>(1.5, 0, 0));
+  result = apply_periodic_boundary_conditions({lbox.x() + 1, 0, 0}, box);
+  assert_near_vec3(result, {1.0, 0, 0});
+  //Test some aritrary distances multiple times the box size
+  for(int i = 0; i < 10; i++){
+    result = apply_periodic_boundary_conditions({i*lbox.x() + 1, 0, 0}, box);
+    assert_near_vec3(result, {1.0, 0, 0});
+  }
+  //Test random distances
+  for(int i = 0; i < 10; i++){
+    auto pos = get_random_vec3(-10*lbox, 10*lbox);
+    result = apply_periodic_boundary_conditions(pos, box);
+    assert_near_vec3(result, apply_periodic_boundary_conditions_naive(pos, box));
+  }
+}
+
+
 TEST(NeighborList, IsCorrectForNParticlesNBodyPeriodicBox){
   int num_particles = 100;
   float box_size = 128;
-  nbody_test<float>(num_particles, vec3<float>(box_size), true, 0.5*box_size);
+  nbody_test<float>(num_particles, vec3<float>(box_size), true, sqrt(3)*box_size*0.5);
 }
