@@ -44,6 +44,27 @@ TEST(Queue, BufferCanBeCreated){
   ASSERT_NE(positions_ptr, nullptr);
 }
 
+TEST(Queue, CanUseAtomicRef){
+  //Create a queue with the default device
+  sycl::queue q = md::get_default_queue();
+  constexpr int N = 100;
+  int v = 0;
+  sycl::buffer<int> buf(&v, 1);
+  q.submit([&](sycl::handler& h) {
+    sycl::accessor acc{buf, h, sycl::read_write};
+    h.parallel_for<class AtomicExample>(sycl::range<1>{N}, [=](sycl::id<1> i) {
+      // Define an atomic reference to an integer in the buffer
+      sycl::atomic_ref<int, sycl::memory_order::relaxed,
+		       sycl::memory_scope::device> atomic_ref(acc[0]);
+      // Use the atomic reference to increment the value in the buffer atomically
+      atomic_ref++;
+    });
+  }).wait();
+  sycl::host_accessor acc{buf};
+  ASSERT_EQ(acc[0], N);
+}
+
+
 TEST(NeighborList, IsCorrectForTwoParticlesOpenBox){
   auto q = md::get_default_queue();
   auto positions = sycl::buffer<vec3<float>>(2);
