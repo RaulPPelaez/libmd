@@ -75,7 +75,7 @@ TEST(NeighborList, IsCorrectForTwoParticlesOpenBox){
   }
   auto cutoff = 1.5f;
   auto [neighbors, neighbor_indices, max_num_neighbors] =
-    md::computeNeighbors(q, positions, cutoff, empty_box<float>);
+    md::computeNeighbors(q, positions, cutoff, empty_box<float>, 32, true);
   sycl::host_accessor neighbors_acc{neighbors, sycl::read_only};
   sycl::host_accessor neighbor_indices_acc{neighbor_indices, sycl::read_only};
   EXPECT_EQ(neighbors_acc[0], 1);
@@ -100,7 +100,7 @@ void nbody_test(int num_particles, vec3<T> box_size, bool periodic, T cutoff){
   auto box = empty_box<T>;
   if(periodic) box = Box(box_size);
   auto [neighbors, neighbor_indices, max_num_neighbors] =
-    md::computeNeighbors(q, positions, cutoff, box);
+    md::computeNeighbors(q, positions, cutoff, box, 32, true);
   sycl::host_accessor neighbors_acc{neighbors, sycl::read_only};
   sycl::host_accessor neighbor_indices_acc{neighbor_indices, sycl::read_only};
   //Check that all particles have num_particles - 1 neighbors
