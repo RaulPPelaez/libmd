@@ -1,0 +1,14 @@
+channels:
+  - conda-forge
+  - conda-forge/label/llvm_rc
+  - nvidia
+dependencies:
+  - clang = 16
+  - clangdev
+  - boost
+  - llvm
+  - llvmdev
+  - cuda
+  - gxx = 11
+  - gcc
+  - cmake
