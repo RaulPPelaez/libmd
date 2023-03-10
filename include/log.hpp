@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include <stdarg.h>
 #include <string_view>
 #ifndef MD_LOG_LEVEL
   #define MD_LOG_LEVEL 15
