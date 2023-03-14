@@ -1,10 +1,14 @@
+/* Raul P. Pelaez 2023. Log utilities for libMD
+   This file contains:
+   - A log function to log messages to the console
+   - A log level enum class
+ */
 #pragma once
 #include <array>
 #include <cstdio>
 #include <map>
 #include <string>
-#include <stdarg.h>
-#include <string_view>
+#include <cstdarg>
 #ifndef MD_LOG_LEVEL
   #define MD_LOG_LEVEL 15
 #endif
