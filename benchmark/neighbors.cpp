@@ -22,8 +22,8 @@ auto run_benchmark(float density, int num_particles,
   int max_num_neighbors = expected_num_neighbors;
   auto positions_v = generateParticleCloud(num_particles, lbox);
   sycl::buffer positions(positions_v.begin(), positions_v.end());
-  int warmup = 3;
-  int nprof = 100;
+  int warmup = 10;
+  int nprof = 1000;
   int ntest = nprof + warmup;
   auto q = md::get_default_queue();
   auto start = std::chrono::high_resolution_clock::now();
