@@ -61,7 +61,7 @@ TEST(Queue, CanUseAtomicRef) {
                         sycl::memory_scope::device>(acc[0]);
        // Use the atomic reference to increment the value in the buffer
        // atomically
-       atom = 100;
+       atom.fetch_add(1);
      });
    }).wait_and_throw();
   sycl::host_accessor acc{buf, sycl::read_only};
@@ -209,4 +209,9 @@ TEST(NeighborList, IsCorrectForNParticlesNBodyPeriodicBox) {
     nbody_test<float>(num_particles, vec3<float>(box_size), true,
                       sqrt(3) * box_size * 0.5);
   }
+}
+
+
+TEST(Clean, CleanUp) {
+  cleanup();
 }
