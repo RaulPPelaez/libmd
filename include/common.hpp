@@ -1,3 +1,11 @@
+/* Raul P. Pelaez 2023. Common utilities for libMD.
+
+   This file implements:
+   - A simple 3D box. Can be orthorhombic, cubic or triclinic
+   - A function to apply periodic boundary conditions to a distance vector
+   - Definitions for common types used in libMD
+
+ */
 #pragma once
 #include <CL/sycl.hpp>
 #include <concepts>
@@ -11,16 +19,6 @@ namespace md {
   template <class T> using vec3 = sycl::vec<T, 3>;
 
   /**
-   * @brief Returns the default queue used by libMD
-   *
-   */
-  static inline sycl::queue get_default_queue() {
-    static sycl::default_selector selector;
-    static sycl::queue q{selector};
-    return q;
-  }
-
-  /**
    * @brief A simple 3D box. Can be orthorhombic, cubic or triclinic
    * The member size is a 3x3 matrix, where the first row is the x vector, the
    * second row is the y vector and the third row is the z vector of the box
@@ -28,34 +26,43 @@ namespace md {
    *
    */
   template <std::floating_point T> struct Box {
-    sycl::marray<vec3<T>, 3> size{}; // box vectors
+    sycl::marray<vec3<T>, 3> size; // box vectors
 
     constexpr Box() : size() {}
 
     // Triclinic box
-    Box(sycl::marray<vec3<T>, 3> size) : size(size) {}
+    explicit Box(sycl::marray<vec3<T>, 3> size) : size(size) {}
 
     // Orthorhombic box
-    Box(vec3<T> orth_size) {
+    explicit Box(vec3<T> orth_size) {
       size[0] = {orth_size[0], 0, 0};
       size[1] = {0, orth_size[1], 0};
       size[2] = {0, 0, orth_size[2]};
     }
 
     // Cubic box
-    Box(T orth_size): Box(vec3<T>{orth_size, orth_size, orth_size}) {}
+    explicit Box(T orth_size) : Box(vec3<T>{orth_size, orth_size, orth_size}) {}
 
-
+    [[nodiscard]] bool isPeriodic() const {
+      bool isPeriodic = false;
+      for (int i = 0; i < 3; i++) {
+        if (this->size[i][i] > 0) {
+          isPeriodic = true;
+        }
+      }
+      return isPeriodic;
+    }
   };
 
-  template <class T> static const Box<T> empty_box = Box<T>();
+  template <class T> static const Box<T> empty_box{};
 
   /**
    * @brief Applies periodic boundary conditions to a distance vector
    *
    * @tparam T The floating point type of the distance vector
    * @param distance The distance vector
-   * @param box The box to apply the boundary conditions to. Can be orthorhombic, cubic or triclinic
+   * @param box The box to apply the boundary conditions to. Can be
+   * orthorhombic, cubic or triclinic
    * @return vec3<T> The distance vector with the boundary conditions applied
    */
   template <std::floating_point T>
