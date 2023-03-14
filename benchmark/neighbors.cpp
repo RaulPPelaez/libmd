@@ -56,32 +56,34 @@ auto run_benchmark(float density, int num_particles,
 }
 
 int main() {
-  sycl::queue q = md::get_default_queue();
-  // Print queue information
-  log<MESSAGE>("Running on %s",
-               q.get_device().get_info<sycl::info::device::name>().c_str());
-  log<MESSAGE>("Device vendor: %s",
-               q.get_device().get_info<sycl::info::device::vendor>().c_str());
-  log<MESSAGE>("Device version: %s",
-               q.get_device().get_info<sycl::info::device::version>().c_str());
-  log<MESSAGE>(
-      "Device driver version: %s",
-      q.get_device().get_info<sycl::info::device::driver_version>().c_str());
-  if (!q.get_device().has(sycl::aspect::usm_shared_allocations)) {
-    log<ERROR>("Device does not support usm_shared_allocations");
-    return 1;
-  }
+  {
+    sycl::queue q = md::get_default_queue();
+    // Print queue information
+    log<MESSAGE>("Running on %s",
+		 q.get_device().get_info<sycl::info::device::name>().c_str());
+    log<MESSAGE>("Device vendor: %s",
+		 q.get_device().get_info<sycl::info::device::vendor>().c_str());
+    log<MESSAGE>("Device version: %s",
+		 q.get_device().get_info<sycl::info::device::version>().c_str());
+    log<MESSAGE>(
+		 "Device driver version: %s",
+		 q.get_device().get_info<sycl::info::device::driver_version>().c_str());
+    if (!q.get_device().has(sycl::aspect::usm_shared_allocations)) {
+      log<ERROR>("Device does not support usm_shared_allocations");
+      return 1;
+    }
 
-  float density = 0.5;
-  printf("#%-10s\t%-10s\n", "num_particles", "time (ms)");
+    float density = 0.5;
+    printf("#%-10s\t%-10s\n", "num_particles", "time (ms)");
 
-  for (int n = 16; n >= 1; n--) {
-    int num_particles = 1 << n;
-    int expected_num_neighbors = std::min(num_particles, 128);
-    auto elapsed =
+    for (int n = 16; n >= 1; n--) {
+      int num_particles = 1 << n;
+      int expected_num_neighbors = std::min(num_particles, 128);
+      auto elapsed =
         run_benchmark(density, num_particles, expected_num_neighbors);
-    printf("%-10d\t%-10.3f\n", num_particles, elapsed / 1e6);
+      printf("%-10d\t%-10.3f\n", num_particles, elapsed / 1e6);
+    }
   }
-
+  cleanup();
   return 0;
 }
