@@ -147,7 +147,7 @@ namespace md {
     struct device_hash {
 
       std::size_t operator()(std::pair<sycl::device, sycl::context> in) const {
-        return 0;
+        return in.first.hipSYCL_hash_code() ^ in.second.hipSYCL_hash_code();
       }
     };
 
@@ -175,13 +175,23 @@ namespace md {
     static pool_usm_resource* get(sycl::queue q) {
       return get(q.get_device(), q.get_context());
     }
+
   } // namespace pool_usm_memory_resource_factory
+
+  //Free all resources and clear the map
+  static void clear_memory_resources() {
+    for (auto& i : pool_usm_memory_resource_factory::resources) {
+      i.second.first->free_all();
+    }
+    pool_usm_memory_resource_factory::resources.clear();
+  }
 
   static auto*
   get_default_usm_memory_resource(sycl::queue& q = get_default_queue()) {
     auto usm_res = pool_usm_memory_resource_factory::get(q);
-    static pool_memory_resource_adaptor<usm_memory_resource> pool_mr;
-    return &pool_mr;
+    // static pool_memory_resource_adaptor<usm_memory_resource> pool_mr;
+    // return &pool_mr;
+    return usm_res;
   }
 
   /**
