@@ -25,25 +25,8 @@ namespace md {
    * @tparam T The floating point type of the box vectors
    *
    */
-  template <std::floating_point T> struct Box {
-    sycl::marray<vec3<T>, 3> size; // box vectors
-
-    constexpr Box() : size() {}
-
-    // Triclinic box
-    explicit Box(sycl::marray<vec3<T>, 3> size) : size(size) {}
-
-    // Orthorhombic box
-    explicit Box(vec3<T> orth_size) {
-      size[0] = {orth_size[0], 0, 0};
-      size[1] = {0, orth_size[1], 0};
-      size[2] = {0, 0, orth_size[2]};
-    }
-
-    // Cubic box
-    explicit Box(T orth_size) : Box(vec3<T>{orth_size, orth_size, orth_size}) {}
-
-    [[nodiscard]] bool isPeriodic() const {
+  template <std::floating_point T> class Box {
+    bool checkIsPeriodic(){
       bool isPeriodic = false;
       for (int i = 0; i < 3; i++) {
         if (this->size[i][i] > 0) {
@@ -51,6 +34,28 @@ namespace md {
         }
       }
       return isPeriodic;
+    }
+  public:
+    sycl::marray<vec3<T>, 3> size; // box vectors
+    bool m_is_periodic = false;
+    constexpr Box() : size() {}
+
+    // Triclinic box
+    explicit Box(sycl::marray<vec3<T>, 3> size) : size(size), m_is_periodic(checkIsPeriodic()) {}
+
+    // Orthorhombic box
+    explicit Box(vec3<T> orth_size) {
+      size[0] = {orth_size[0], 0, 0};
+      size[1] = {0, orth_size[1], 0};
+      size[2] = {0, 0, orth_size[2]};
+      this->m_is_periodic = checkIsPeriodic();
+    }
+
+    // Cubic box
+    explicit Box(T orth_size) : Box(vec3<T>{orth_size, orth_size, orth_size}) {}
+
+    [[nodiscard]] bool isPeriodic() const {
+      return m_is_periodic;
     }
   };
 

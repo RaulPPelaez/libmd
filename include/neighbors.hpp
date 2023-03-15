@@ -9,6 +9,18 @@
 #include <limits>
 namespace md {
 
+  // Checks if two positions are neighbors given a cutoff distance
+  template <std::floating_point T>
+  bool isNeighbor(const vec3<T>& pos_i, const vec3<T>& pos_j, T cutoff,
+                  const Box<T>& box) {
+    auto pos_diff = pos_i - pos_j;
+    if (box.isPeriodic()) {
+      pos_diff = apply_periodic_boundary_conditions(pos_diff, box);
+    }
+    const auto dist = sycl::length(pos_diff);
+    return dist <= cutoff;
+  }
+
   /**
    * @brief Compute the neighbors of each particle
    *
@@ -51,38 +63,54 @@ namespace md {
     if (check_error) {
       too_many_neighbors[0] = -1;
     }
-    bool isPeriodic = box.isPeriodic();
+    size_t local_size = std::min<size_t>(num_particles, 128);
+    size_t num_tiles = (num_particles + local_size - 1) / local_size;
+    auto execution_range = sycl::nd_range<1>{
+        sycl::range<1>{num_tiles * local_size}, sycl::range<1>{local_size}};
     auto event = q.submit([&](sycl::handler& h) {
       sycl::accessor positions_acc{positions, h, sycl::read_only};
+      sycl::local_accessor<vec3<T>> shared{sycl::range<1>{local_size}, h};
       h.parallel_for<class computeNeighbors>(
-          sycl::range<1>(num_particles), [=](sycl::item<1> item) {
-            const auto i = item.get_id(0);
-            const auto pos_i = positions_acc[i];
+          execution_range, [=](sycl::nd_item<1> tid) {
+            const size_t global_id = tid.get_global_id().get(0);
+            const size_t local_id = tid.get_local_id().get(0);
+            const bool is_active = global_id < num_particles;
+            const vec3<T> pos_i =
+                is_active ? positions_acc[global_id] : vec3<T>{0, 0, 0};
             int num_neighbors = 0;
-            for (int j = 0; j < num_particles; j++) {
-              if (i == j) {
-                continue;
-              }
-              const auto pos_j = positions_acc[j];
-              auto pos_diff = pos_i - pos_j;
-              if (isPeriodic) {
-                pos_diff = apply_periodic_boundary_conditions(pos_diff, box);
-              }
-              const auto dist = sycl::length(pos_diff);
-              if (dist <= cutoff) {
-                if (num_neighbors >= max_num_neighbors) {
-		  auto atom =
-		    sycl::atomic_ref<int, sycl::memory_order::relaxed,
-				     sycl::memory_scope::device>(
-								 too_many_neighbors_acc[0]);
-		  atom = i;
-                  break;
+            for (size_t offset = 0; offset < num_particles;
+                 offset += local_size) {
+              const size_t j_load = offset + local_id;
+              if (j_load < num_particles)
+                shared[local_id] = positions_acc[j_load];
+              else
+                shared[local_id] = vec3<T>{0, 0, 0};
+              tid.barrier();
+              for (size_t k = 0; k < local_size; k++) {
+                const vec3<T> pos_j = shared[k];
+                const bool is_neighbor = isNeighbor(pos_i, pos_j, cutoff, box);
+                const bool is_same_particle = global_id == offset + k;
+                const bool is_active_j = offset + k < num_particles;
+                if (is_neighbor and is_active and is_active_j and
+                    not is_same_particle) {
+                  if (num_neighbors >= max_num_neighbors) {
+                    auto atom =
+                        sycl::atomic_ref<int, sycl::memory_order::relaxed,
+                                         sycl::memory_scope::device>(
+                            too_many_neighbors_acc[0]);
+                    atom = global_id;
+                  } else {
+                    neighbor_indices_acc[global_id * max_num_neighbors +
+                                         num_neighbors] = offset + k;
+                  }
+                  num_neighbors++;
                 }
-                neighbor_indices_acc[i * max_num_neighbors + num_neighbors] = j;
-                num_neighbors++;
               }
+              tid.barrier();
             }
-            neighbors_acc[i] = num_neighbors;
+            if (is_active) {
+              neighbors_acc[global_id] = num_neighbors;
+            }
           });
     });
     int too_many_neighbors2 = -1;
