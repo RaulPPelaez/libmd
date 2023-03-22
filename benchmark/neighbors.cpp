@@ -87,7 +87,7 @@ int main() {
       int expected_num_neighbors = std::min(num_particles, 128);
       auto elapsed =
           run_benchmark(density, num_particles, expected_num_neighbors);
-      printf("%-10d\t%-10.3f\n", num_particles, elapsed / 1e6);
+      printf("%-10d\t%-10.5f\n", num_particles, elapsed / 1e6);
     }
   }
   cleanup();
