@@ -178,7 +178,7 @@ namespace md {
 
   } // namespace pool_usm_memory_resource_factory
 
-  //Free all resources and clear the map
+  // Free all resources and clear the map
   static void clear_memory_resources() {
     for (auto& i : pool_usm_memory_resource_factory::resources) {
       i.second.first->free_all();
@@ -238,7 +238,8 @@ namespace md {
     }
 
     /**
-     * @brief Constructs a new vector by copying the elements from the given STL vector.
+     * @brief Constructs a new vector by copying the elements from the given STL
+     * vector.
      *
      * @param other The vector to copy.
      * @param q The queue to use for the allocation.
@@ -249,10 +250,38 @@ namespace md {
       std::copy(other.begin(), other.end(), begin());
     }
 
+    // Rule of five:
+    // Destructor
+    ~usm_vector() = default;
+
+    // Copy constructor
+    usm_vector(usm_vector<T>&& other) noexcept
+        : m_data(std::move(other.m_data)), m_size(other.m_size),
+          capacity(other.capacity), m_queue(other.m_queue) {}
+
+    // Move constructor
+    usm_vector<T>& operator=(usm_vector<T>&& other) noexcept {
+      m_data = std::move(other.m_data);
+      m_size = other.m_size;
+      capacity = other.capacity;
+      m_queue = other.m_queue;
+      return *this;
+    }
+
+    // Copy assignment
     usm_vector(const usm_vector<T>& other)
         : usm_vector(other.size(), other.m_queue) {
       std::copy(other.begin(), other.end(), begin());
     }
+
+    // Move assignment
+    usm_vector<T>& operator=(const usm_vector<T>& other) {
+      resize(other.size());
+      std::copy(other.begin(), other.end(), begin());
+      return *this;
+    }
+
+    T& operator[](size_t i) const { return m_data.get()[i]; }
 
     iterator begin() const { return iterator(data()); }
 
@@ -283,8 +312,6 @@ namespace md {
     }
 
     void swap(usm_vector<T>& another) { m_data.swap(another.m_data); }
-
-    T& operator[](uint i) { return *(data() + i); }
 
     operator std::vector<T>() const {
       std::vector<T> hvec(size());
