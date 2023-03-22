@@ -30,15 +30,18 @@ auto run_benchmark(float density, int num_particles,
   auto [num_neighbors, neighbor_indices, found_max_num_neighbors] =
       computeNeighbors(positions, cutoff, box, max_num_neighbors, true);
   max_num_neighbors = found_max_num_neighbors;
-  for (int i = 0; i < ntest; i++) {
-    if (i == warmup) {
-      q.wait_and_throw();
-      start = std::chrono::high_resolution_clock::now();
-    }
+  for (int i = 0; i < warmup; i++) {
     std::tie(num_neighbors, neighbor_indices, found_max_num_neighbors) =
         computeNeighbors(positions, cutoff, box, max_num_neighbors);
   }
   q.wait_and_throw();
+  start = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < nprof; i++) {
+    std::tie(num_neighbors, neighbor_indices, found_max_num_neighbors) =
+        computeNeighbors(positions, cutoff, box, max_num_neighbors);
+  }
+  q.wait_and_throw();
+
   auto end = std::chrono::high_resolution_clock::now();
   // Average num_neighbors over all particles
   // sycl::host_accessor num_neighbors_acc{num_neighbors, sycl::read_only};
@@ -47,12 +50,14 @@ auto run_benchmark(float density, int num_particles,
   mean_num_neighbors =
       std::accumulate(num_neighbors.begin(), num_neighbors.end(), 0.0f);
   mean_num_neighbors /= num_particles;
-  log<MESSAGE>(
-      "num_particles: %d, max_num_neighbors: %d, mean_num_neighbors: %g",
-      num_particles, max_num_neighbors, mean_num_neighbors);
+  log<DEBUG2>("num_particles: %d, max_num_neighbors: %d, mean_num_neighbors: "
+              "%g lbox: %g, cutoff: %g",
+              num_particles, max_num_neighbors, mean_num_neighbors, lbox,
+              cutoff);
+
   auto elapsed =
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  return elapsed.count() / nprof;
+  return elapsed.count() / double(nprof);
 }
 
 int main() {
@@ -60,14 +65,15 @@ int main() {
     sycl::queue q = md::get_default_queue();
     // Print queue information
     log<MESSAGE>("Running on %s",
-		 q.get_device().get_info<sycl::info::device::name>().c_str());
+                 q.get_device().get_info<sycl::info::device::name>().c_str());
     log<MESSAGE>("Device vendor: %s",
-		 q.get_device().get_info<sycl::info::device::vendor>().c_str());
-    log<MESSAGE>("Device version: %s",
-		 q.get_device().get_info<sycl::info::device::version>().c_str());
+                 q.get_device().get_info<sycl::info::device::vendor>().c_str());
     log<MESSAGE>(
-		 "Device driver version: %s",
-		 q.get_device().get_info<sycl::info::device::driver_version>().c_str());
+        "Device version: %s",
+        q.get_device().get_info<sycl::info::device::version>().c_str());
+    log<MESSAGE>(
+        "Device driver version: %s",
+        q.get_device().get_info<sycl::info::device::driver_version>().c_str());
     if (!q.get_device().has(sycl::aspect::usm_shared_allocations)) {
       log<ERROR>("Device does not support usm_shared_allocations");
       return 1;
@@ -76,11 +82,11 @@ int main() {
     float density = 0.5;
     printf("#%-10s\t%-10s\n", "num_particles", "time (ms)");
 
-    for (int n = 16; n >= 1; n--) {
+    for (int n = 14; n >= 1; n--) {
       int num_particles = 1 << n;
       int expected_num_neighbors = std::min(num_particles, 128);
       auto elapsed =
-        run_benchmark(density, num_particles, expected_num_neighbors);
+          run_benchmark(density, num_particles, expected_num_neighbors);
       printf("%-10d\t%-10.3f\n", num_particles, elapsed / 1e6);
     }
   }
