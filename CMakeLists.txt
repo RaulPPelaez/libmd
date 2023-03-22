@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.5)
 project(libmd VERSION 0.1)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/../cmake)
 set (CMAKE_CXX_STANDARD 20)
-find_package(hipSYCL CONFIG REQUIRED)
+find_package(OpenSYCL CONFIG REQUIRED)
 
 set(MD_LOG_LEVEL 15 CACHE STRING "Log level")
 add_compile_definitions(MD_LOG_LEVEL=${MD_LOG_LEVEL})
