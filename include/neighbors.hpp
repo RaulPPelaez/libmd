@@ -54,23 +54,30 @@ namespace md {
     // increase the  max_num_neighbors and recompute the  neighbors.
     auto q = get_default_queue();
     const auto num_particles = positions.get_count();
-    usm_vector<int> neighbors(num_particles);
-    auto* neighbors_acc = neighbors.data();
-    usm_vector<int> neighbor_indices(num_particles * max_num_neighbors);
-    auto* neighbor_indices_acc = neighbor_indices.data();
-    usm_vector<int> too_many_neighbors(1);
-    auto* too_many_neighbors_acc = too_many_neighbors.data();
-    if (check_error) {
-      too_many_neighbors[0] = -1;
-    }
+    sycl::buffer<int> neighbors(num_particles);
+    sycl::buffer<int> neighbor_indices(num_particles * max_num_neighbors);
+    sycl::buffer<int> too_many_neighbors(1);
     size_t local_size = std::min<size_t>(num_particles, 128);
     size_t num_tiles = (num_particles + local_size - 1) / local_size;
     auto execution_range = sycl::nd_range<1>{
-        sycl::range<1>{num_tiles * local_size}, sycl::range<1>{local_size}};
+      sycl::range<1>{num_tiles * local_size}, sycl::range<1>{local_size}};
+    if(check_error){
+      q.submit([&](sycl::handler& h){
+	sycl::accessor too_many_neighbors_acc{too_many_neighbors, h, sycl::write_only, sycl::no_init};
+	h.single_task<class initTooManyNeighbors>([=](){
+	  too_many_neighbors_acc[0] = -1;
+	});
+      }
+	);
+    }
     auto event = q.submit([&](sycl::handler& h) {
       sycl::accessor positions_acc{positions, h, sycl::read_only};
       sycl::local_accessor<vec3<T>> shared{sycl::range<1>{local_size}, h};
-      h.parallel_for<class computeNeighbors>(
+      sycl::accessor neighbors_acc{neighbors, h, sycl::write_only, sycl::no_init};
+      sycl::accessor neighbor_indices_acc{neighbor_indices, h, sycl::write_only, sycl::no_init};
+      sycl::accessor too_many_neighbors_acc{too_many_neighbors, h,
+					    sycl::write_only, sycl::no_init};
+    h.parallel_for<class computeNeighbors>(
           execution_range, [=](sycl::nd_item<1> tid) {
             const size_t global_id = tid.get_global_id().get(0);
             const size_t local_id = tid.get_local_id().get(0);
@@ -116,9 +123,16 @@ namespace md {
     int too_many_neighbors2 = -1;
     if (check_error) {
       event.wait();
-      too_many_neighbors2 = too_many_neighbors[0];
+      sycl::host_accessor too_many_neighbors_acc{too_many_neighbors};
+      too_many_neighbors2 = too_many_neighbors_acc[0];
     }
-    return std::make_tuple(neighbors, neighbor_indices, too_many_neighbors2);
+    usm_vector<int> neighbors2(num_particles);
+    usm_vector<int> neighbor_indices2(num_particles * max_num_neighbors);
+    sycl::host_accessor neighbors_acc{neighbors};
+    std::copy(neighbors_acc.get_pointer(), neighbors_acc.get_pointer() + neighbors_acc.size(), neighbors2.begin());
+    sycl::host_accessor neighbor_indices_acc{neighbor_indices};
+    std::copy(neighbor_indices_acc.get_pointer(), neighbor_indices_acc.get_pointer() + neighbor_indices_acc.size(), neighbor_indices2.begin());
+    return std::make_tuple(neighbors2, neighbor_indices2, too_many_neighbors2);
   }
 
   /**
