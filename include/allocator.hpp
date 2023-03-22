@@ -250,37 +250,6 @@ namespace md {
       std::copy(other.begin(), other.end(), begin());
     }
 
-    // Rule of five:
-    // Destructor
-    ~usm_vector() = default;
-
-    // Copy constructor
-    usm_vector(usm_vector<T>&& other) noexcept
-        : m_data(std::move(other.m_data)), m_size(other.m_size),
-          capacity(other.capacity), m_queue(other.m_queue) {}
-
-    // Move constructor
-    usm_vector<T>& operator=(usm_vector<T>&& other) noexcept {
-      m_data = std::move(other.m_data);
-      m_size = other.m_size;
-      capacity = other.capacity;
-      m_queue = other.m_queue;
-      return *this;
-    }
-
-    // Copy assignment
-    usm_vector(const usm_vector<T>& other)
-        : usm_vector(other.size(), other.m_queue) {
-      std::copy(other.begin(), other.end(), begin());
-    }
-
-    // Move assignment
-    usm_vector<T>& operator=(const usm_vector<T>& other) {
-      resize(other.size());
-      std::copy(other.begin(), other.end(), begin());
-      return *this;
-    }
-
     T& operator[](size_t i) const { return m_data.get()[i]; }
 
     iterator begin() const { return iterator(data()); }
