@@ -23,7 +23,7 @@ Compilation is done via CMake:
 	  mkdir build
 	  cd build
 	  #Compilation requires a list of targets
-	  HIPSYCL_TARGETS="omp;cuda:sm_70;hip:gfx906" cmake ..
+	  OPENSYCL_TARGETS="omp;cuda:sm_70;hip:gfx906" cmake ..
 	  #Solve any issues pointed by cmake before continuing
 	  make
 	  make test #Optionally run the tests 
