@@ -58,8 +58,7 @@ A brief example of how a code using libMD typically looks like.
   //neighbors[i]: The number of neighbors of particle i
   //neighbor_indices[i * max_num_neighbors + j]: The index of the jth neighbor of particle i
   //max_num_neighbors: The maximum number of neighbors of any particle
-  sycl::host_accessor neighbors_acc{neighbors, sycl::read_only};
-  std::cout<<"Number of neighbors of particle 0: "<<neighbors_acc[0]<<std::endl;
+  std::cout<<"Number of neighbors of particle 0: "<<neighbors[0]<<std::endl;
  	  
 
 
