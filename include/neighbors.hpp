@@ -11,8 +11,8 @@ namespace md {
 
   // Checks if two positions are neighbors given a cutoff distance
   template <std::floating_point T>
-  bool isNeighbor(const vec3<T>& pos_i, const vec3<T>& pos_j, T cutoff,
-                  const Box<T>& box) {
+  static inline bool isNeighbor(const vec3<T>& pos_i, const vec3<T>& pos_j,
+                                T cutoff, const Box<T>& box) {
     auto pos_diff = pos_i - pos_j;
     if (box.isPeriodic()) {
       pos_diff = apply_periodic_boundary_conditions(pos_diff, box);
