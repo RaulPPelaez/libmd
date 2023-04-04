@@ -212,6 +212,104 @@ TEST(NeighborList, IsCorrectForNParticlesNBodyPeriodicBox) {
 }
 
 
+
+TEST(PairList, IsCorrectForTwoParticlesOpenBox) {
+  auto q = md::get_default_queue();
+  auto positions = sycl::buffer<vec3<float>>(2);
+  {
+    sycl::host_accessor positions_acc{positions, sycl::write_only,
+                                      sycl::no_init};
+    positions_acc[0] = vec3<float>(0, 0, 0);
+    positions_acc[1] = vec3<float>(1, 0, 0);
+  }
+  auto cutoff = 1.5f;
+  auto [neighbors, deltas, distances, num_pairs] =
+      md::computeNeighborPairs(positions, cutoff, empty_box<float>, 32, true);
+  q.wait_and_throw();
+  EXPECT_EQ(neighbors[0], 1);
+  EXPECT_EQ(neighbors[1], 0);
+  EXPECT_NEAR(distances[0], 1, 1e-5);
+  EXPECT_NEAR(deltas[0].x(), 1, 1e-5);
+  EXPECT_NEAR(deltas[0].y(), 0, 1e-5);
+  EXPECT_NEAR(deltas[0].z(), 0, 1e-5);
+  EXPECT_EQ(num_pairs[0], 1);
+}
+
+template <std::floating_point T>
+void nbody_test_pairs(int num_particles, vec3<T> box_size, bool periodic, T cutoff) {
+  auto q = md::get_default_queue();
+  auto positions = sycl::buffer<vec3<T>>(num_particles);
+  {
+    sycl::host_accessor positions_acc{positions, sycl::write_only,
+                                      sycl::no_init};
+    // Positions are placed randomly inside a cubic box
+    std::mt19937 gen(0xBADA55D00D);
+    std::uniform_real_distribution<T> dis(0, 1);
+    for (int i = 0; i < num_particles; i++) {
+      positions_acc[i] = vec3<T>(dis(gen), dis(gen), dis(gen)) * box_size;
+    }
+  }
+  auto box = empty_box<T>;
+  if (periodic)
+    box = Box(box_size);
+  int expected_pairs = num_particles*(num_particles - 1)/2;
+  auto [neighbors, deltas, distances, num_pairs] =
+    md::computeNeighborPairs(positions, cutoff, box, expected_pairs, true);
+  q.wait_and_throw();
+  ASSERT_EQ(num_pairs[0], expected_pairs) << "incorrect number of pairs";
+  // Check that all pairs are included as neighbors
+  std::vector<int> pairs(num_pairs[0]);
+  {
+    for(int i = 0; i < num_pairs[0]; i++) {
+      int ii = neighbors[2*i];
+      int jj = neighbors[2*i + 1];
+      if (ii > jj)
+	std::swap(ii, jj);
+      pairs[i] = ii * num_particles + jj;
+    }
+  }
+  std::sort(pairs.begin(), pairs.end());
+  int c = 0;
+  for(int i = 0; i < num_particles; i++) {
+    for(int j = i + 1; j < num_particles; j++) {
+      int pair = i * num_particles + j;
+      ASSERT_TRUE(pairs[c] == pair) << "Pair (" << i << ", " << j << ") is missing";
+      c++;
+    }
+
+  }
+}
+
+TEST(PairList, CorrectlyResizes) {
+  auto q = md::get_default_queue();
+  int num_particles = 1000;
+  std::vector<vec3<float>> h_pos(num_particles, vec3<float>());
+  sycl::buffer positions(h_pos.begin(), h_pos.end());
+  auto cutoff = 1.5f;
+  auto [neighbors, deltas, distances, num_pairs] =
+      md::computeNeighborPairs(positions, cutoff, empty_box<float>, 32, true);
+  q.wait_and_throw();
+  ASSERT_GE(num_pairs[0], num_particles*(num_particles - 1)/2);
+}
+
+TEST(PairList, IsCorrectForNParticlesNBody) {
+  int num_particles = 100;
+  float box_size = 128;
+  nbody_test_pairs<float>(num_particles, vec3<float>(box_size), false,
+                    sqrt(3) * box_size);
+}
+
+
+TEST(PairList, IsCorrectForNParticlesNBodyPeriodicBox) {
+  float box_size = 128;
+  for (int exponent = 12; exponent > 0; exponent--) {
+    int num_particles = 1 << exponent;
+    nbody_test<float>(num_particles, vec3<float>(box_size), true,
+                      sqrt(3) * box_size * 0.5);
+  }
+}
+
+
 TEST(Clean, CleanUp) {
   cleanup();
 }

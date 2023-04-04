@@ -5,4 +5,5 @@
 #include "common.hpp"
 #include "log.hpp"
 #include "neighbors.hpp"
+#include "pairs.hpp"
 #include "clean.hpp"
