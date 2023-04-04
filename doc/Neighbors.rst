@@ -33,9 +33,6 @@ Compute Neighbor Pairs (Alternative)
 
 This module provides an alternative function to compute the neighbor pairs of a group of 3D points. This version allows to automatically increase the maximum number of neighbors until all required pairs fit.
 
-Function
---------
-
 .. cpp:function:: template <std::floating_point T> auto computeNeighborPairs(sycl::buffer<vec3<T>>& positions, T cutoff = std::numeric_limits<T>::infinity(), Box<T> box = empty_box<T>, int max_num_pairs = 32, bool resize_to_fit = false)
 
    This function computes the neighbors of each particle, with an option to resize the neighbor indices buffer to fit all neighbors.
