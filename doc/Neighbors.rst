@@ -38,7 +38,6 @@ This module provides an alternative function to compute the neighbor pairs of a 
    This function computes the neighbors of each particle, with an option to resize the neighbor indices buffer to fit all neighbors.
    Note that the size of the output might be larger than the max_num_pairs provided if resize_to_fit=true.
    
-   :param q: The SYCL queue to use.
    :param positions: The positions of the particles with shape (num_particles, 3).
    :param cutoff: The cutoff distance. (optional, default: `std::numeric_limits<T>::infinity()`)
    :param box: The box to use. If the box is empty, the system is assumed to be non-periodic. (optional, default: `empty_box<T>`)
