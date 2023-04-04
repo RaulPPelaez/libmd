@@ -77,6 +77,12 @@ namespace md {
 	    }
           });
     });
+    if(check_error){
+      event.wait_and_throw();
+      if(num_pairs[0] > max_num_pairs){
+	throw std::runtime_error("Too many pairs found, expected at most "+std::to_string(max_num_pairs)+", found "+std::to_string(num_pairs[0]));
+      }
+    }
     return std::make_tuple(neighbor_pairs, neighbor_vectors, neighbor_distances, num_pairs);
   }
 

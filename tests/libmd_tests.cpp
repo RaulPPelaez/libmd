@@ -235,6 +235,20 @@ TEST(PairList, IsCorrectForTwoParticlesOpenBox) {
   EXPECT_EQ(num_pairs[0], 1);
 }
 
+TEST(PairList, ThrowsIfRequired) {
+  auto q = md::get_default_queue();
+  auto positions = sycl::buffer<vec3<float>>(100);
+  {
+    sycl::host_accessor positions_acc{positions, sycl::write_only,
+                                      sycl::no_init};
+    for (int i = 0; i < positions.size(); i++)
+      positions_acc[i] = vec3<float>(0, 0, 0);
+  }
+  auto cutoff = 1.0f;
+  ASSERT_THROW(md::computeNeighborPairs(positions, cutoff, empty_box<float>, 1, true), std::runtime_error);
+  q.wait_and_throw();
+}
+
 template <std::floating_point T>
 void nbody_test_pairs(int num_particles, vec3<T> box_size, bool periodic, T cutoff) {
   auto q = md::get_default_queue();
