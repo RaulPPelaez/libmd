@@ -13,7 +13,6 @@ namespace md {
   /**
    * @brief Compute the neighbors of each particle
    *
-   * @param q The SYCL queue to use
    * @param positions The positions of the particles with shape (num_particles,
    * 3)
    * @param cutoff The cutoff distance.
@@ -110,7 +109,6 @@ namespace md {
   /**
    * @brief Compute the neighbors of each particle
    *
-   * @param q The SYCL queue to use
    * @param positions The positions of the particles with shape (num_particles,
    * 3)
    * @param cutoff The cutoff distance.
