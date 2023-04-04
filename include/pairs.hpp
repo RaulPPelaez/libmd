@@ -117,8 +117,10 @@ namespace md {
     // increase the  max_num_neighbors and recompute the  neighbors.
     int num_particles = positions.get_count();
     do {
-      auto [neighbors, deltas, distances, num_pairs] = tryComputeNeighborPairs(positions, cutoff, box, max_num_pairs, resize_to_fit);
+      auto [neighbors, deltas, distances, num_pairs] = tryComputeNeighborPairs(positions, cutoff, box, max_num_pairs);
       if (resize_to_fit) {
+	auto q = get_default_queue();
+	q.wait_and_throw();
         if (num_pairs[0] > max_num_pairs) {
           // If  we  found  a  particle with  more  than  max_num_neighbors
           // neighbors, increase max_num_neighbors and recompute

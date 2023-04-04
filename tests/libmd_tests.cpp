@@ -245,7 +245,7 @@ TEST(PairList, ThrowsIfRequired) {
       positions_acc[i] = vec3<float>(0, 0, 0);
   }
   auto cutoff = 1.0f;
-  ASSERT_THROW(md::computeNeighborPairs(positions, cutoff, empty_box<float>, 1, true), std::runtime_error);
+  ASSERT_THROW(md::tryComputeNeighborPairs(positions, cutoff, empty_box<float>, 1, true), std::runtime_error);
   q.wait_and_throw();
 }
 
