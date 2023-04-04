@@ -69,7 +69,8 @@ A brief example of how a code using libMD typically looks like.
    :hidden:
    :maxdepth: 4
    :caption: First steps
-
+	     
+   Neighbors
    QuickStart
    Compiling
    FAQ
