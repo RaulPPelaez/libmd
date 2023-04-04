@@ -3,23 +3,12 @@
  */
 #pragma once
 #include "common.hpp"
+#include "utils.hpp"
 #include "queue.hpp"
 #include "log.hpp"
 #include "allocator.hpp"
 #include <limits>
 namespace md {
-
-  // Checks if two positions are neighbors given a cutoff distance
-  template <std::floating_point T>
-  static inline bool isNeighbor(const vec3<T>& pos_i, const vec3<T>& pos_j,
-                                T cutoff, const Box<T>& box) {
-    auto pos_diff = pos_i - pos_j;
-    if (box.isPeriodic()) {
-      pos_diff = apply_periodic_boundary_conditions(pos_diff, box);
-    }
-    const auto dist = sycl::length(pos_diff);
-    return dist <= cutoff;
-  }
 
   /**
    * @brief Compute the neighbors of each particle
@@ -49,9 +38,6 @@ namespace md {
                            Box<T> box = empty_box<T>,
                            int max_num_neighbors = 32,
                            bool check_error = false) {
-    // This function starts with a  max_num_neighbors of 32 by default,
-    // and if it finds a particle  with more than 32 neighbors, it will
-    // increase the  max_num_neighbors and recompute the  neighbors.
     auto q = get_default_queue();
     const auto num_particles = positions.get_count();
     usm_vector<int> neighbors(num_particles);
@@ -95,7 +81,7 @@ namespace md {
                     not is_same_particle) {
                   if (num_neighbors >= max_num_neighbors) {
                     auto atom =
-                        sycl::atomic_ref<int, sycl::memory_order::relaxed,
+		      sycl::atomic_ref<int, sycl::memory_order::relaxed,
                                          sycl::memory_scope::device>(
                             too_many_neighbors_acc[0]);
                     atom = global_id;
